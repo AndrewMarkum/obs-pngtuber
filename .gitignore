@@ -8,6 +8,8 @@
 .vscode
 .idea
 
+.ccls-cache
+
 # ignore generated files
 *.generated.*
 **/.Brewfile.lock.json

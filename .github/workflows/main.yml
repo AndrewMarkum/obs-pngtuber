@@ -16,7 +16,7 @@ on:
       - main, master
 
 env:
-  PLUGIN_NAME: 'obs-image-reaction-ashmanix'
+  PLUGIN_NAME: 'obs-pngtuber'
 
 jobs:
   clang_check:
