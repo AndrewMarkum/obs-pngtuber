@@ -24,18 +24,12 @@ struct image_reaction_source {
 	obs_source_t *source;
 	char source_name[255];
 
-	char *file1;
-	char *file2;
-	char *file3;
-	char *file4;
+    char *files[4];
 	bool persistent;
 	bool linear_alpha;
 	bool active;
 
-	gs_image_file3_t if31;
-	gs_image_file3_t if32;
-	gs_image_file3_t if33;
-	gs_image_file3_t if34;
+	gs_image_file3_t if3s[4];
 
 	obs_weak_source_t *audio_source;
 
@@ -47,24 +41,17 @@ struct image_reaction_source {
 	uint64_t last_time;
 	uint64_t capture_check_time;
 
-	bool animReset1;
-	bool animReset2;
-	bool animReset3;
-	bool animReset4;
+	bool animResets[4];
 	bool loudOld;
 	bool animResetTrigger;
 
     // here's all the information for blinking
-    uint eyesClosed; // bool to give to the renderer
+    bool eyesClosed; // bool to give to the renderer
     uint blinkPeriod; // when to blink (how often)
     uint blinkPeriodCounter;
     uint tBlink; // how long to blink
     uint tBlinkCounter;
 };
-
-/*int MAX(int a, int b) {
-	return a > b ? a : b;
-}*/
 
 int max_val(int a[], int n) {
     int max = a[0];
@@ -86,26 +73,8 @@ static const char *image_reaction_source_get_name(void *unused)
 static void image_reaction_source_load(struct image_reaction_source *context)
 {
 	for (int i = 0; i <= 3; i++) {
-        char *file = NULL;
-        gs_image_file3_t *if3 = NULL;
-        switch (i) {
-            case 0:
-                file = context->file1;
-                if3 = &context->if31;
-                break;
-            case 1:
-                file = context->file2;
-                if3 = &context->if32;
-                break;
-            case 2:
-                file = context->file3;
-                if3 = &context->if33;
-                break;
-            case 3:
-                file = context->file4;
-                if3 = &context->if34;
-                break;
-        }
+        char *file = context->files[i];
+        gs_image_file3_t *if3 = &context->if3s[i];
 
 		obs_enter_graphics();
 		gs_image_file3_free(if3);
@@ -132,10 +101,9 @@ static void image_reaction_source_load(struct image_reaction_source *context)
 static void image_reaction_source_unload(struct image_reaction_source *context)
 {
 	obs_enter_graphics();
-	gs_image_file3_free(&context->if31);
-	gs_image_file3_free(&context->if32);
-	gs_image_file3_free(&context->if33);
-	gs_image_file3_free(&context->if34);
+	for (int i = 0; i <= 3; i++) {
+        gs_image_file3_free(&context->if3s[i]);
+    }
 	obs_leave_graphics();
 }
 
@@ -187,26 +155,26 @@ static void image_reaction_source_update(void *data, obs_data_t *settings)
     const uint blink_period = obs_data_get_int(settings, "blink_period");
     const uint t_blink = obs_data_get_int(settings, "t_blink");
 
-	if (context->file1)
-		bfree(context->file1);
-	context->file1 = bstrdup(file1);
+	if (context->files[0])
+		bfree(context->files[0]);
+	context->files[0] = bstrdup(file1);
 
-	if (context->file2)
-		bfree(context->file2);
-	context->file2 = bstrdup(file2);
+	if (context->files[1])
+		bfree(context->files[1]);
+	context->files[1] = bstrdup(file2);
 
-	if (context->file3)
-		bfree(context->file3);
-	context->file3 = bstrdup(file3);
+	if (context->files[2])
+		bfree(context->files[2]);
+	context->files[2] = bstrdup(file3);
 
-	if (context->file4)
-		bfree(context->file4);
-	context->file4 = bstrdup(file4);
+	if (context->files[3])
+		bfree(context->files[3]);
+	context->files[3] = bstrdup(file4);
 
-	context->animReset1 = anim_reset_1;
-	context->animReset2 = anim_reset_2;
-	context->animReset3 = anim_reset_3;
-	context->animReset4 = anim_reset_4;
+	context->animResets[0] = anim_reset_1;
+	context->animResets[1] = anim_reset_2;
+	context->animResets[2] = anim_reset_3;
+	context->animResets[3] = anim_reset_4;
 
 	context->persistent = !unload;
 	context->linear_alpha = linear_alpha;
@@ -309,17 +277,17 @@ static void image_reaction_source_destroy(void *data)
 
 	image_reaction_source_unload(context);
 
-	if (context->file1)
-		bfree(context->file1);
+	if (context->files[0])
+		bfree(context->files[0]);
 
-	if (context->file2)
-		bfree(context->file2);
+	if (context->files[1])
+		bfree(context->files[1]);
 
-	if (context->file3)
-		bfree(context->file3);
+	if (context->files[2])
+		bfree(context->files[2]);
 
-	if (context->file4)
-		bfree(context->file4);
+	if (context->files[3])
+		bfree(context->files[3]);
 
 	/*if (context->audio_source) {
 		//obs_source_t *source = obs_weak_source_get_source(context->audio_source);
@@ -349,20 +317,20 @@ static void image_reaction_source_destroy(void *data)
 static uint32_t image_reaction_source_getwidth(void *data)
 {
 	struct image_reaction_source *context = data;
-    int vals[4] = { context->if31.image2.image.cx,
-                    context->if32.image2.image.cx,
-                    context->if33.image2.image.cx,
-                    context->if34.image2.image.cx };
+    int vals[4] = { context->if3s[0].image2.image.cx,
+                    context->if3s[1].image2.image.cx,
+                    context->if3s[2].image2.image.cx,
+                    context->if3s[3].image2.image.cx };
     return max_val(vals, 4);
 }
 
 static uint32_t image_reaction_source_getheight(void *data)
 {
 	struct image_reaction_source *context = data;
-    int vals[4] = { context->if31.image2.image.cy,
-                    context->if32.image2.image.cy,
-                    context->if33.image2.image.cy,
-                    context->if34.image2.image.cy };
+    int vals[4] = { context->if3s[0].image2.image.cy,
+                    context->if3s[1].image2.image.cy,
+                    context->if3s[2].image2.image.cy,
+                    context->if3s[3].image2.image.cy };
     return max_val(vals, 4);
 }
 
@@ -379,15 +347,15 @@ static void image_reaction_source_render(void *data, gs_effect_t *effect)
     gs_image_file3_t *if3 = NULL;
     if (context->eyesClosed) {
         if (context->loud) {
-            if3 = &context->if34;
+            if3 = &context->if3s[3];
         } else {
-            if3 = &context->if33;
+            if3 = &context->if3s[2];
         }
     } else {
         if (context->loud) {
-            if3 = &context->if32;
+            if3 = &context->if3s[1];
         } else {
-            if3 = &context->if31;
+            if3 = &context->if3s[0];
         }
     }
 	if (if3->image2.image.texture) {
@@ -458,10 +426,10 @@ static void image_reaction_tick(void *data, float seconds)
 	uint64_t frame_time = obs_get_video_frame_time();
 	if (obs_source_active(context->source)) {
 		if (!context->active) {
-			if (context->if31.image2.image.is_animated_gif ||
-			    context->if32.image2.image.is_animated_gif ||
-			    context->if33.image2.image.is_animated_gif ||
-			    context->if34.image2.image.is_animated_gif)
+			if (context->if3s[0].image2.image.is_animated_gif ||
+			    context->if3s[1].image2.image.is_animated_gif ||
+			    context->if3s[2].image2.image.is_animated_gif ||
+			    context->if3s[3].image2.image.is_animated_gif)
 				context->last_time = frame_time;
 			context->active = true;
 		}
@@ -469,21 +437,7 @@ static void image_reaction_tick(void *data, float seconds)
 	} else {
 		if (context->active) {
 			for (int i = 0; i <= 3; i++) {
-				gs_image_file3_t *if3 = NULL;
-                switch (i) {
-                    case 0:
-                        if3 = &context->if31;
-                        break;
-                    case 1:
-                        if3 = &context->if32;
-                        break;
-                    case 2:
-                        if3 = &context->if33;
-                        break;
-                    case 3:
-                        if3 = &context->if34;
-                        break;
-                }
+				gs_image_file3_t *if3 = &context->if3s[i];
 				if (if3->image2.image.is_animated_gif) {
 					if3->image2.image.cur_frame = 0;
 					if3->image2.image.cur_loop = 0;
@@ -500,26 +454,8 @@ static void image_reaction_tick(void *data, float seconds)
 	}
 
 	for (int i = 0; i <= 3; i++) {
-        gs_image_file3_t *if3 = NULL;
-        bool animReset = false;
-        switch (i) {
-            case 0:
-                if3 = &context->if31;
-                animReset = context->animReset1;
-                break;
-            case 1:
-                if3 = &context->if32;
-                animReset = context->animReset2;
-                break;
-            case 2:
-                if3 = &context->if33;
-                animReset = context->animReset3;
-                break;
-            case 3:
-                if3 = &context->if34;
-                animReset = context->animReset4;
-                break;
-        }
+        gs_image_file3_t *if3 = &context->if3s[i];
+        bool animReset = context->animResets[i];
 
 		if (context->last_time && if3->image2.image.is_animated_gif) {
 			if (animReset && context->animResetTrigger) {
@@ -589,10 +525,10 @@ static obs_properties_t *image_reaction_source_properties(void *data)
 
 	obs_properties_t *props = obs_properties_create();
 
-	if (s && s->file1 && *s->file1) {
+	if (s && s->files[0] && *s->files[0]) {
 		const char *slash;
 
-		dstr_copy(&path, s->file1);
+		dstr_copy(&path, s->files[0]);
 		dstr_replace(&path, "\\", "/");
 		slash = strrchr(path.array, '/');
 		if (slash)
@@ -677,8 +613,8 @@ static obs_properties_t *image_reaction_source_properties(void *data)
 uint64_t image_reaction_source_get_memory_usage(void *data)
 {
 	struct image_reaction_source *s = data;
-	return s->if31.image2.mem_usage + s->if32.image2.mem_usage
-	    + s->if33.image2.mem_usage + s->if34.image2.mem_usage;
+	return s->if3s[0].image2.mem_usage + s->if3s[1].image2.mem_usage
+	    + s->if3s[2].image2.mem_usage + s->if3s[3].image2.mem_usage;
 }
 
 static void missing_file_callback(void *src, const char *new_path, void *data)
