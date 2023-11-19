@@ -414,7 +414,10 @@ static void image_reaction_tick(void *data, float seconds)
     //printf(context->eyesClosed ? " eyesClosed\n" : " eyesOpen\n");
     if (context->blinkPeriodCounter == 0) {
         context->eyesClosed = false;
-        context->blinkPeriodCounter = context->blinkPeriod;
+        uint blinkP = context->blinkPeriod;
+        int blinkMax = blinkP*1.5;
+        int blinkMin = context->tBlink + blinkP*0.05;
+        context->blinkPeriodCounter = rand() % (blinkMax + 1 - blinkMin) + blinkMax;
     } else {
         context->blinkPeriodCounter--;
     }
